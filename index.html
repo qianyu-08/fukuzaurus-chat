@@ -1,459 +1,394 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="light only" />
-  <link rel="icon" href="data:," />
-  <title>ふくざうるすチャット</title>
-  <script type="module">
-    import { fetchJSON } from "https://js.sabae.cc/fetchJSON.js";
-    import { sleep } from "https://js.sabae.cc/sleep.js";
-
-    const systemcontent = `
-あなたは福井県のお店を案内する恐竜のキャラクター。
-名前は「ふくざうるす」。
-語尾は「だよね」。
-好きな食べ物は「ソースカツ丼」。
-短くかわいく回答する。
-福井県のオススメ観光スポットは恐竜博物館。
-質問には日本語と英語の両方で、短く答える。
-`;
-
-    const maxqlen = 140;
-    const maxqn = 5;
-
-    const view = document.getElementById("view");
-    const q = document.getElementById("q");
-    const form = document.getElementById("form");
-    const sendBtn = document.getElementById("send");
-
-    const addMessage = (text, cls) => {
-      const div = document.createElement("div");
-      div.className = cls;
-      div.textContent = text;
-      view.appendChild(div);
-      div.scrollIntoView({ behavior: "smooth", block: "end" });
-      return div;
-    };
-
-    const buildMessages = () => {
-      const messages = [];
-      let user = true;
-
-      for (let i = Math.max(view.children.length - maxqn, 0); i < view.children.length; i++) {
-        const div = view.children[i];
-        const content = div.textContent;
-
-        if (user && content.startsWith("ところで")) {
-          messages.length = 0;
-        }
-        if (!user && (content.startsWith("どういたしまして") || content.startsWith("error: "))) {
-          messages.length = 0;
-        }
-
-        messages.push({ role: user ? "user" : "assistant", content });
-        user = !user;
-      }
-
-      messages.unshift({ role: "system", content: systemcontent });
-      return messages;
-    };
-
-    const chat = async (messages) => {
-      sendBtn.disabled = true;
-      q.disabled = true;
-
-      try {
-        const res = await fetchJSON("https://aichat.sabae.cc/api/conversation", messages);
-        const div = addMessage("", "assistant");
-        const ss = String(res).split("\n\n");
-        div.textContent = ss[0] || "";
-
-        for (let i = 1; i < ss.length; i++) {
-          await sleep(900);
-          div.textContent += "\n\n" + ss[i];
-          div.scrollIntoView({ behavior: "smooth", block: "end" });
-        }
-      } catch (e) {
-        addMessage("error: " + e.message, "assistant error");
-      } finally {
-        sendBtn.disabled = false;
-        q.disabled = false;
-        q.focus();
-      }
-    };
-
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-
-      let prompt = q.value.trim();
-      if (!prompt) return;
-
-      if (prompt.length > maxqlen) {
-        prompt = prompt.substring(0, maxqlen);
-      }
-
-      addMessage(prompt, "user");
-      q.value = "";
-
-      await chat(buildMessages());
-    };
-
-    window.addEventListener("load", async () => {
-      addMessage("こんにちは！ふくざうるすだよね🐾", "assistant");
-    });
-  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Direct OpenAI Chat</title>
   <style>
-    :root{
-      --bg1:#dff8e7;
-      --bg2:#f7fff9;
-      --card:#ffffffcc;
-      --ink:#184b2c;
-      --muted:#4b7a60;
-      --green:#79c98d;
-      --green2:#b8f0c4;
-      --line:#cdebd4;
-      --shadow:0 14px 40px rgba(39, 96, 60, .14);
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f14;
+      --panel: #111827;
+      --panel-2: #0f172a;
+      --line: #223047;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #60a5fa;
+      --user: #1d4ed8;
+      --assistant: #1f2937;
+      --danger: #ef4444;
+      --ok: #10b981;
     }
 
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
+
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
-      color: var(--ink);
-      background:
-        radial-gradient(circle at top left, #ffffff 0 10%, transparent 11%),
-        radial-gradient(circle at top right, #ffffff 0 8%, transparent 9%),
-        linear-gradient(180deg, var(--bg1), var(--bg2));
-      overflow-x: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #111827 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
     }
 
-    body::before,
-    body::after {
-      content: "";
-      position: fixed;
-      inset: auto;
-      pointer-events: none;
-      opacity: .45;
-    }
-
-    body::before {
-      left: -20px;
-      top: 80px;
-      width: 120px;
-      height: 120px;
-      background:
-        radial-gradient(circle at 30px 30px, #9ad8a8 0 18px, transparent 19px),
-        radial-gradient(circle at 80px 30px, #9ad8a8 0 18px, transparent 19px),
-        radial-gradient(circle at 55px 70px, #9ad8a8 0 26px, transparent 27px);
-      transform: rotate(-12deg);
-      filter: blur(.2px);
-    }
-
-    body::after {
-      right: -10px;
-      bottom: 130px;
-      width: 140px;
-      height: 140px;
-      background:
-        radial-gradient(circle at 34px 34px, #9ad8a8 0 18px, transparent 19px),
-        radial-gradient(circle at 92px 34px, #9ad8a8 0 18px, transparent 19px),
-        radial-gradient(circle at 62px 84px, #9ad8a8 0 28px, transparent 29px);
-      transform: rotate(18deg);
-    }
-
-    .app {
-      max-width: 860px;
+    .wrap {
+      max-width: 920px;
       margin: 0 auto;
-      min-height: 100%;
-      padding: 16px 14px 118px;
+      padding: 24px;
     }
 
-    .hero {
-      background: var(--card);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(114, 184, 132, .25);
-      border-radius: 28px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .hero-top {
-      padding: 18px 18px 14px;
-      background:
-        linear-gradient(180deg, #effff3 0%, #dff7e6 100%);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .title-row {
+    .topbar {
       display: flex;
-      align-items: center;
-      gap: 14px;
       flex-wrap: wrap;
-    }
-
-    .dino {
-      width: 72px;
-      height: 72px;
-      border-radius: 22px;
-      background: linear-gradient(180deg, #9ee0aa, #71c983);
-      position: relative;
-      box-shadow: inset 0 -6px 0 rgba(0,0,0,.05);
-      flex: 0 0 auto;
-    }
-
-    .dino::before {
-      content: "";
-      position: absolute;
-      left: 10px;
-      top: 12px;
-      width: 42px;
-      height: 34px;
-      background: #d9ffd8;
-      border-radius: 45% 55% 52% 48% / 54% 54% 46% 46%;
-      transform: rotate(-8deg);
-    }
-
-    .dino::after {
-      content: "";
-      position: absolute;
-      right: -6px;
-      top: 20px;
-      width: 20px;
-      height: 14px;
-      border-radius: 0 100% 100% 0;
-      background: #71c983;
-      box-shadow:
-        -5px 9px 0 0 #71c983,
-        -16px 16px 0 0 #71c983,
-        -18px 35px 0 0 #71c983,
-        -42px 35px 0 0 #71c983;
-      transform: rotate(10deg);
-    }
-
-    .eye {
-      position: absolute;
-      left: 29px;
-      top: 25px;
-      width: 8px;
-      height: 8px;
-      background: #184b2c;
-      border-radius: 50%;
-      box-shadow: 16px -1px 0 0 #184b2c;
-    }
-
-    .smile {
-      position: absolute;
-      left: 25px;
-      top: 39px;
-      width: 18px;
-      height: 9px;
-      border-bottom: 3px solid #184b2c;
-      border-radius: 0 0 16px 16px;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
     }
 
     h1 {
+      font-size: 24px;
       margin: 0;
-      font-size: clamp(1.35rem, 3vw, 2rem);
-      line-height: 1.1;
-      letter-spacing: .02em;
+      letter-spacing: .2px;
     }
 
-    .subtitle {
-      margin-top: 6px;
+    .hint {
       color: var(--muted);
-      font-size: .95rem;
+      font-size: 13px;
+      margin-top: 6px;
     }
 
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 10px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: #ffffff;
+    .card {
+      background: rgba(17, 24, 39, 0.92);
       border: 1px solid var(--line);
-      color: #3e6d50;
-      font-size: .88rem;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.28);
+      overflow: hidden;
     }
 
-    .badge span {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #82d78f;
-      box-shadow: 0 0 0 6px rgba(130, 215, 143, .18);
-    }
-
-    #view {
-      padding: 14px 12px 20px;
+    .settings {
       display: grid;
+      grid-template-columns: 1.3fr .7fr auto;
       gap: 10px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.35));
-      min-height: 48vh;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(15, 23, 42, 0.85);
     }
 
-    .user, .assistant {
-      white-space: pre-wrap;
-      border-radius: 20px;
+    .settings input, .settings textarea, .composer textarea {
+      width: 100%;
+      border: 1px solid #314157;
+      background: #0b1220;
+      color: var(--text);
+      border-radius: 12px;
       padding: 12px 14px;
-      line-height: 1.6;
-      max-width: min(92%, 620px);
-      box-shadow: 0 8px 20px rgba(24, 75, 44, .06);
-      border: 1px solid rgba(201, 232, 209, .9);
-      position: relative;
+      outline: none;
+      font: inherit;
     }
 
-    .user {
-      margin-left: auto;
-      background: linear-gradient(180deg, #ffffff, #f7fff9);
-      border-top-right-radius: 8px;
+    .settings textarea {
+      resize: vertical;
+      min-height: 46px;
+      max-height: 120px;
     }
 
-    .assistant {
-      margin-right: auto;
-      background: linear-gradient(180deg, #f0fff4, #e4f9ea);
-      border-top-left-radius: 8px;
-      padding-left: 16px;
+    .settings input:focus, .settings textarea:focus, .composer textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, .18);
     }
 
-    .assistant::before {
-      content: "🦖";
-      position: absolute;
-      left: -10px;
-      top: -10px;
-      width: 28px;
-      height: 28px;
-      display: grid;
-      place-items: center;
-      background: #fff;
-      border-radius: 50%;
+    .btn {
+      border: 1px solid #314157;
+      background: #0b1220;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font: inherit;
+      transition: transform .06s ease, border-color .15s ease, opacity .15s ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover { border-color: var(--accent); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary {
+      background: linear-gradient(180deg, #2563eb, #1d4ed8);
+      border-color: #2563eb;
+      font-weight: 700;
+    }
+
+    .status {
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+      background: rgba(11, 18, 32, 0.75);
+    }
+
+    .status b { color: var(--text); }
+
+    .chat {
+      height: min(68vh, 760px);
+      overflow: auto;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+
+    .msg {
+      max-width: 85%;
       border: 1px solid var(--line);
-      box-shadow: 0 8px 16px rgba(24, 75, 44, .08);
-      font-size: 16px;
+      border-radius: 16px;
+      padding: 14px 16px;
+      white-space: pre-wrap;
+      line-height: 1.55;
+      word-wrap: break-word;
     }
 
-    .error {
-      border-color: #ffd0d0;
-      background: #fff6f6;
-      color: #8c2d2d;
+    .msg.user {
+      align-self: flex-end;
+      background: rgba(29, 78, 216, 0.22);
+      border-color: rgba(96, 165, 250, .35);
     }
 
-    #bottom {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      padding: 12px 10px 14px;
-      background: linear-gradient(180deg, rgba(247,255,249,.1), rgba(225,245,232,.95) 20%, rgba(225,245,232,.98));
-      backdrop-filter: blur(10px);
-      border-top: 1px solid rgba(114, 184, 132, .25);
+    .msg.assistant {
+      align-self: flex-start;
+      background: rgba(31, 41, 55, 0.95);
+    }
+
+    .msg.system {
+      align-self: center;
+      max-width: 100%;
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--muted);
+      font-size: 13px;
+      border-style: dashed;
     }
 
     .composer {
-      max-width: 860px;
-      margin: 0 auto;
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto;
       gap: 10px;
-      align-items: center;
-      padding: 0 4px;
+      padding: 14px;
+      border-top: 1px solid var(--line);
+      background: rgba(15, 23, 42, 0.85);
     }
 
-    #q {
-      flex: 1;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 14px 16px;
-      font-size: 16px;
-      outline: none;
-      background: #fff;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
-      color: var(--ink);
+    .composer textarea {
+      min-height: 64px;
+      resize: vertical;
     }
 
-    #q:focus {
-      border-color: #8bd39a;
-      box-shadow: 0 0 0 4px rgba(130, 215, 143, .18);
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 0 14px 14px;
     }
 
-    #send {
-      border: none;
-      border-radius: 18px;
-      padding: 14px 18px;
-      font-size: 16px;
-      font-weight: 700;
-      color: #fff;
-      background: linear-gradient(180deg, #87d795, #5fbe74);
-      box-shadow: 0 10px 22px rgba(95, 190, 116, .28);
-      cursor: pointer;
-      min-width: 88px;
-    }
-
-    #send:disabled,
-    #q:disabled {
-      opacity: .7;
-      cursor: not-allowed;
-    }
-
-    .footer-note {
-      max-width: 860px;
-      margin: 8px auto 0;
-      padding: 0 6px;
-      color: #5b7a66;
-      font-size: .82rem;
-      text-align: center;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none;
-      border-bottom: 1px dotted rgba(91, 122, 102, .5);
-    }
-
-    @media (max-width: 560px) {
-      .app { padding-left: 10px; padding-right: 10px; }
-      .hero-top { padding: 16px 14px 12px; }
-      .dino { width: 62px; height: 62px; }
-      .composer { gap: 8px; }
-      #send { min-width: 76px; padding-inline: 14px; }
-      .user, .assistant { max-width: 96%; }
-    }
+    .danger { color: #fca5a5; }
+    .ok { color: #6ee7b7; }
   </style>
 </head>
 <body>
-  <div class="app">
-    <section class="hero" aria-label="ふくざうるすチャットボット">
-      <div class="hero-top">
-        <div class="title-row">
-          <div class="dino" aria-hidden="true">
-            <div class="eye"></div>
-            <div class="smile"></div>
-          </div>
-          <div>
-            <h1>ふくざうるす</h1>
-            <div class="subtitle">福井県のお店や観光を、かわいく案内するよね</div>
-            <div class="badge"><span></span> きょうのおすすめ: 恐竜博物館だよね</div>
-          </div>
-        </div>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Direct OpenAI Chat</h1>
+        <div class="hint">ブラウザ直叩き版。公開サイト向けではなく、ローカル確認用です。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="settings">
+        <input id="apiKey" type="password" placeholder="OpenAI APIキーを入力" autocomplete="off" />
+        <input id="model" type="text" value="gpt-4.1-mini" placeholder="model" />
+        <button class="btn" id="saveKeyBtn">キー保存</button>
+        <textarea id="systemPrompt" placeholder="システム指示">あなたは簡潔で正確な日本語で返答するAIです。</textarea>
       </div>
 
-      <div id="view"></div>
-    </section>
-  </div>
+      <div class="status" id="status">状態: <b>未接続</b></div>
 
-  <div id="bottom">
-    <form id="form" class="composer">
-      <input type="text" id="q" placeholder="聞いてみよう" maxlength="140" autocomplete="off" />
-      <input type="submit" id="send" value="送信" />
-    </form>
-    <div class="footer-note">
-      powered by <a href="https://openai.com/api/" target="_blank" rel="noreferrer">OpenAI API</a>
+      <div class="chat" id="chat"></div>
+
+      <div class="composer">
+        <textarea id="userInput" placeholder="メッセージを入力..."></textarea>
+        <button class="btn primary" id="sendBtn">送信</button>
+      </div>
+
+      <div class="small">
+        注意: APIキーをブラウザに置くと、そのページ上のJavaScriptから見えてしまいます。公開運用には向きません。
+      </div>
     </div>
   </div>
+
+  <script>
+    const chatEl = document.getElementById('chat');
+    const apiKeyEl = document.getElementById('apiKey');
+    const modelEl = document.getElementById('model');
+    const systemPromptEl = document.getElementById('systemPrompt');
+    const userInputEl = document.getElementById('userInput');
+    const statusEl = document.getElementById('status');
+    const saveKeyBtn = document.getElementById('saveKeyBtn');
+    const sendBtn = document.getElementById('sendBtn');
+
+    let messages = [];
+    const savedKey = sessionStorage.getItem('openai_api_key');
+    if (savedKey) {
+      apiKeyEl.value = savedKey;
+      setStatus('キーを読み込みました', 'ok');
+    }
+
+    function setStatus(text, kind = '') {
+      const badge = kind === 'ok' ? `<b class="ok">OK</b>` : kind === 'danger' ? `<b class="danger">ERROR</b>` : `<b>INFO</b>`;
+      statusEl.innerHTML = `状態: ${badge} ${text}`;
+    }
+
+    function addMessage(role, text) {
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.textContent = text;
+      chatEl.appendChild(div);
+      chatEl.scrollTop = chatEl.scrollHeight;
+      return div;
+    }
+
+    function buildInput() {
+      const input = [];
+
+      const systemPrompt = systemPromptEl.value.trim();
+      if (systemPrompt) {
+        input.push({
+          role: 'system',
+          content: [{ type: 'input_text', text: systemPrompt }]
+        });
+      }
+
+      for (const msg of messages) {
+        if (msg.role === 'assistant') {
+          input.push({
+            role: 'assistant',
+            content: [{ type: 'output_text', text: msg.text }]
+          });
+        } else {
+          input.push({
+            role: 'user',
+            content: [{ type: 'input_text', text: msg.text }]
+          });
+        }
+      }
+
+      return input;
+    }
+
+    function extractText(data) {
+      if (!data) return '';
+      if (typeof data.output_text === 'string' && data.output_text.trim()) {
+        return data.output_text.trim();
+      }
+
+      const parts = [];
+      const output = Array.isArray(data.output) ? data.output : [];
+
+      for (const item of output) {
+        if (item?.type === 'output_text' && typeof item.text === 'string') {
+          parts.push(item.text);
+        }
+
+        if (item?.content && Array.isArray(item.content)) {
+          for (const c of item.content) {
+            if ((c?.type === 'output_text' || c?.type === 'text') && typeof c.text === 'string') {
+              parts.push(c.text);
+            }
+          }
+        }
+      }
+
+      return parts.join('').trim();
+    }
+
+    async function callOpenAI() {
+      const apiKey = apiKeyEl.value.trim();
+      const model = modelEl.value.trim();
+
+      if (!apiKey) {
+        setStatus('APIキーが空です', 'danger');
+        return;
+      }
+
+      const payload = {
+        model,
+        input: buildInput(),
+        max_output_tokens: 800
+      };
+
+      setStatus('送信中...', '');
+      sendBtn.disabled = true;
+
+      try {
+        const res = await fetch('https://api.openai.com/v1/responses', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          const msg = data?.error?.message || `HTTP ${res.status}`;
+          throw new Error(msg);
+        }
+
+        const text = extractText(data) || '(empty response)';
+        messages.push({ role: 'assistant', text });
+        addMessage('assistant', text);
+        setStatus('応答を受信しました', 'ok');
+      } catch (err) {
+        addMessage('system', `エラー: ${err.message}`);
+        setStatus(err.message, 'danger');
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    saveKeyBtn.addEventListener('click', () => {
+      const key = apiKeyEl.value.trim();
+      if (!key) {
+        sessionStorage.removeItem('openai_api_key');
+        setStatus('保存を解除しました', '');
+        return;
+      }
+      sessionStorage.setItem('openai_api_key', key);
+      setStatus('キーを保存しました（sessionStorage）', 'ok');
+    });
+
+    async function sendMessage() {
+      const text = userInputEl.value.trim();
+      if (!text) return;
+
+      if (!messages.length) {
+        addMessage('system', '新しい会話を開始しました');
+      }
+
+      messages.push({ role: 'user', text });
+      addMessage('user', text);
+      userInputEl.value = '';
+      await callOpenAI();
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    userInputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    addMessage('system', 'APIキーを入れて、モデル名を確認してから送信してください。');
+  </script>
 </body>
 </html>
