@@ -2,393 +2,268 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Direct OpenAI Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OpenAI Direct Chat (Local Only)</title>
   <style>
-    :root {
-      color-scheme: dark;
-      --bg: #0b0f14;
-      --panel: #111827;
-      --panel-2: #0f172a;
-      --line: #223047;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --accent: #60a5fa;
-      --user: #1d4ed8;
-      --assistant: #1f2937;
-      --danger: #ef4444;
-      --ok: #10b981;
+    :root{
+      --bg:#0f1115;
+      --panel:#171a21;
+      --line:#2a2f3a;
+      --text:#e7eaf0;
+      --muted:#9aa3b2;
+      --user:#2d6cdf;
+      --bot:#232836;
+      --accent:#7c8cff;
     }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #111827 0%, var(--bg) 55%);
-      color: var(--text);
-      min-height: 100vh;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      background:radial-gradient(circle at top,#171b28,var(--bg) 45%);
+      color:var(--text);
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
     }
-
-    .wrap {
-      max-width: 920px;
-      margin: 0 auto;
-      padding: 24px;
+    .app{
+      width:min(900px,100%);
+      height:min(90vh,900px);
+      border:1px solid var(--line);
+      border-radius:18px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      background:rgba(23,26,33,.92);
+      box-shadow:0 20px 60px rgba(0,0,0,.35);
+      backdrop-filter:blur(10px);
     }
-
-    .topbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
+    .header{
+      padding:16px 18px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
     }
-
-    h1 {
-      font-size: 24px;
-      margin: 0;
-      letter-spacing: .2px;
+    .title{font-weight:700}
+    .status{color:var(--muted);font-size:14px}
+    .messages{
+      flex:1;
+      overflow:auto;
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
     }
-
-    .hint {
-      color: var(--muted);
-      font-size: 13px;
-      margin-top: 6px;
+    .msg{
+      max-width:78%;
+      padding:12px 14px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      white-space:pre-wrap;
+      line-height:1.55;
+      word-break:break-word;
     }
-
-    .card {
-      background: rgba(17, 24, 39, 0.92);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.28);
-      overflow: hidden;
+    .user{
+      align-self:flex-end;
+      background:linear-gradient(180deg,rgba(45,108,223,.96),rgba(29,82,185,.96));
+      border-color:rgba(255,255,255,.08);
     }
-
-    .settings {
-      display: grid;
-      grid-template-columns: 1.3fr .7fr auto;
-      gap: 10px;
-      padding: 14px;
-      border-bottom: 1px solid var(--line);
-      background: rgba(15, 23, 42, 0.85);
+    .bot{align-self:flex-start;background:var(--bot)}
+    .composer{
+      border-top:1px solid var(--line);
+      padding:14px;
+      display:flex;
+      gap:10px;
+      background:rgba(15,17,21,.55);
     }
-
-    .settings input, .settings textarea, .composer textarea {
-      width: 100%;
-      border: 1px solid #314157;
-      background: #0b1220;
-      color: var(--text);
-      border-radius: 12px;
-      padding: 12px 14px;
-      outline: none;
-      font: inherit;
+    textarea{
+      flex:1;
+      resize:none;
+      height:54px;
+      max-height:180px;
+      padding:14px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#11141b;
+      color:var(--text);
+      outline:none;
+      font:inherit;
     }
-
-    .settings textarea {
-      resize: vertical;
-      min-height: 46px;
-      max-height: 120px;
+    button{
+      min-width:96px;
+      border:0;
+      border-radius:12px;
+      padding:0 18px;
+      background:var(--accent);
+      color:white;
+      font-weight:700;
+      cursor:pointer;
     }
-
-    .settings input:focus, .settings textarea:focus, .composer textarea:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(96, 165, 250, .18);
+    button:disabled, textarea:disabled{
+      opacity:.6;
+      cursor:not-allowed;
     }
-
-    .btn {
-      border: 1px solid #314157;
-      background: #0b1220;
-      color: var(--text);
-      border-radius: 12px;
-      padding: 12px 16px;
-      cursor: pointer;
-      font: inherit;
-      transition: transform .06s ease, border-color .15s ease, opacity .15s ease;
-      white-space: nowrap;
+    .hint{
+      padding:0 18px 14px;
+      color:var(--muted);
+      font-size:13px;
     }
-
-    .btn:hover { border-color: var(--accent); }
-    .btn:active { transform: translateY(1px); }
-    .btn.primary {
-      background: linear-gradient(180deg, #2563eb, #1d4ed8);
-      border-color: #2563eb;
-      font-weight: 700;
+    .danger{
+      color:#ffb7b7;
+      font-size:13px;
+      padding:0 18px 14px;
     }
-
-    .status {
-      padding: 10px 14px;
-      font-size: 13px;
-      color: var(--muted);
-      border-bottom: 1px solid var(--line);
-      background: rgba(11, 18, 32, 0.75);
+    code.inline{
+      background:#0d1016;
+      border:1px solid var(--line);
+      padding:2px 6px;
+      border-radius:8px;
     }
-
-    .status b { color: var(--text); }
-
-    .chat {
-      height: min(68vh, 760px);
-      overflow: auto;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      scroll-behavior: smooth;
-    }
-
-    .msg {
-      max-width: 85%;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px 16px;
-      white-space: pre-wrap;
-      line-height: 1.55;
-      word-wrap: break-word;
-    }
-
-    .msg.user {
-      align-self: flex-end;
-      background: rgba(29, 78, 216, 0.22);
-      border-color: rgba(96, 165, 250, .35);
-    }
-
-    .msg.assistant {
-      align-self: flex-start;
-      background: rgba(31, 41, 55, 0.95);
-    }
-
-    .msg.system {
-      align-self: center;
-      max-width: 100%;
-      background: rgba(15, 23, 42, 0.9);
-      color: var(--muted);
-      font-size: 13px;
-      border-style: dashed;
-    }
-
-    .composer {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      padding: 14px;
-      border-top: 1px solid var(--line);
-      background: rgba(15, 23, 42, 0.85);
-    }
-
-    .composer textarea {
-      min-height: 64px;
-      resize: vertical;
-    }
-
-    .small {
-      font-size: 12px;
-      color: var(--muted);
-      padding: 0 14px 14px;
-    }
-
-    .danger { color: #fca5a5; }
-    .ok { color: #6ee7b7; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div>
-        <h1>Direct OpenAI Chat</h1>
-        <div class="hint">ブラウザ直叩き版。公開サイト向けではなく、ローカル確認用です。</div>
-      </div>
+  <div class="app">
+    <div class="header">
+      <div class="title">OpenAI Direct Chat</div>
+      <div class="status" id="status">待機中</div>
     </div>
 
-    <div class="card">
-      <div class="settings">
-        <input id="apiKey" type="password" placeholder="OpenAI APIキーを入力" autocomplete="off" />
-        <input id="model" type="text" value="gpt-4.1-mini" placeholder="model" />
-        <button class="btn" id="saveKeyBtn">キー保存</button>
-        <textarea id="systemPrompt" placeholder="システム指示">あなたは簡潔で正確な日本語で返答するAIです。</textarea>
-      </div>
-
-      <div class="status" id="status">状態: <b>未接続</b></div>
-
-      <div class="chat" id="chat"></div>
-
-      <div class="composer">
-        <textarea id="userInput" placeholder="メッセージを入力..."></textarea>
-        <button class="btn primary" id="sendBtn">送信</button>
-      </div>
-
-      <div class="small">
-        注意: APIキーをブラウザに置くと、そのページ上のJavaScriptから見えてしまいます。公開運用には向きません。
-      </div>
+    <div class="hint">
+      Enter で送信、Shift + Enter で改行
     </div>
+    <div class="danger">
+      ローカル検証専用。APIキーがHTML内に見えるので、本番では絶対に使わないこと。
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="msg bot">こんにちは。直叩き版です。</div>
+    </div>
+
+    <form class="composer" id="form">
+      <textarea id="input" placeholder="メッセージを入力..."></textarea>
+      <button id="send" type="submit">送信</button>
+    </form>
   </div>
 
   <script>
-    const chatEl = document.getElementById('chat');
-    const apiKeyEl = document.getElementById('apiKey');
-    const modelEl = document.getElementById('model');
-    const systemPromptEl = document.getElementById('systemPrompt');
-    const userInputEl = document.getElementById('userInput');
-    const statusEl = document.getElementById('status');
-    const saveKeyBtn = document.getElementById('saveKeyBtn');
-    const sendBtn = document.getElementById('sendBtn');
+    // ここに直書きする。ローカル検証限定。
+    const OPENAI_API_KEY = "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";
 
-    let messages = [];
-    const savedKey = sessionStorage.getItem('openai_api_key'); // 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
-    if (savedKey) {
-      apiKeyEl.value = savedKey;
-      setStatus('キーを読み込みました', 'ok');
-    }
+    const MODEL = "gpt-4.1";
+    const API_URL = "https://api.openai.com/v1/responses";
 
-    function setStatus(text, kind = '') {
-      const badge = kind === 'ok' ? `<b class="ok">OK</b>` : kind === 'danger' ? `<b class="danger">ERROR</b>` : `<b>INFO</b>`;
-      statusEl.innerHTML = `状態: ${badge} ${text}`;
-    }
+    const messagesEl = document.getElementById("messages");
+    const form = document.getElementById("form");
+    const input = document.getElementById("input");
+    const sendBtn = document.getElementById("send");
+    const statusEl = document.getElementById("status");
 
-    function addMessage(role, text) {
-      const div = document.createElement('div');
-      div.className = `msg ${role}`;
+    const convo = [
+      {
+        role: "system",
+        content: [
+          {
+            type: "input_text",
+            text: "You are a helpful assistant."
+          }
+        ]
+      }
+    ];
+
+    function addMessage(text, cls) {
+      const div = document.createElement("div");
+      div.className = `msg ${cls}`;
       div.textContent = text;
-      chatEl.appendChild(div);
-      chatEl.scrollTop = chatEl.scrollHeight;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
       return div;
     }
 
-    function buildInput() {
-      const input = [];
-
-      const systemPrompt = systemPromptEl.value.trim();
-      if (systemPrompt) {
-        input.push({
-          role: 'system',
-          content: [{ type: 'input_text', text: systemPrompt }]
-        });
-      }
-
-      for (const msg of messages) {
-        if (msg.role === 'assistant') {
-          input.push({
-            role: 'assistant',
-            content: [{ type: 'output_text', text: msg.text }]
-          });
-        } else {
-          input.push({
-            role: 'user',
-            content: [{ type: 'input_text', text: msg.text }]
-          });
-        }
-      }
-
-      return input;
+    function setBusy(busy) {
+      input.disabled = busy;
+      sendBtn.disabled = busy;
+      statusEl.textContent = busy ? "応答中..." : "待機中";
     }
 
-    function extractText(data) {
-      if (!data) return '';
-      if (typeof data.output_text === 'string' && data.output_text.trim()) {
-        return data.output_text.trim();
-      }
-
-      const parts = [];
-      const output = Array.isArray(data.output) ? data.output : [];
-
-      for (const item of output) {
-        if (item?.type === 'output_text' && typeof item.text === 'string') {
-          parts.push(item.text);
-        }
-
-        if (item?.content && Array.isArray(item.content)) {
-          for (const c of item.content) {
-            if ((c?.type === 'output_text' || c?.type === 'text') && typeof c.text === 'string') {
-              parts.push(c.text);
-            }
-          }
-        }
-      }
-
-      return parts.join('').trim();
-    }
-
-    async function callOpenAI() {
-      const apiKey = apiKeyEl.value.trim();
-      const model = modelEl.value.trim();
-
-      if (!apiKey) {
-        setStatus('APIキーが空です', 'danger');
-        return;
-      }
-
+    async function sendToOpenAI() {
       const payload = {
-        model,
-        input: buildInput(),
-        max_output_tokens: 800
+        model: MODEL,
+        input: convo
       };
 
-      setStatus('送信中...', '');
-      sendBtn.disabled = true;
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify(payload)
+      });
 
-      try {
-        const res = await fetch('https://api.openai.com/v1/responses', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify(payload)
-        });
+      const data = await res.json();
 
-        const data = await res.json();
-
-        if (!res.ok) {
-          const msg = data?.error?.message || `HTTP ${res.status}`;
-          throw new Error(msg);
-        }
-
-        const text = extractText(data) || '(empty response)';
-        messages.push({ role: 'assistant', text });
-        addMessage('assistant', text);
-        setStatus('応答を受信しました', 'ok');
-      } catch (err) {
-        addMessage('system', `エラー: ${err.message}`);
-        setStatus(err.message, 'danger');
-      } finally {
-        sendBtn.disabled = false;
+      if (!res.ok) {
+        const msg = data?.error?.message || data?.error || `HTTP ${res.status}`;
+        throw new Error(msg);
       }
+
+      return data.output_text || "返答を取得できませんでした。";
     }
 
-    saveKeyBtn.addEventListener('click', () => {
-      const key = apiKeyEl.value.trim();
-      if (!key) {
-        sessionStorage.removeItem('openai_api_key');
-        setStatus('保存を解除しました', '');
-        return;
-      }
-      sessionStorage.setItem('openai_api_key', key);
-      setStatus('キーを保存しました（sessionStorage）', 'ok');
-    });
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    async function sendMessage() {
-      const text = userInputEl.value.trim();
+      const text = input.value.trim();
       if (!text) return;
 
-      if (!messages.length) {
-        addMessage('system', '新しい会話を開始しました');
-      }
+      addMessage(text, "user");
+      convo.push({
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text
+          }
+        ]
+      });
 
-      messages.push({ role: 'user', text });
-      addMessage('user', text);
-      userInputEl.value = '';
-      await callOpenAI();
-    }
+      input.value = "";
 
-    sendBtn.addEventListener('click', sendMessage);
+      const placeholder = addMessage("入力中...", "bot");
+      setBusy(true);
 
-    userInputEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
+      try {
+        const reply = await sendToOpenAI();
+        placeholder.remove();
+        addMessage(reply, "bot");
+
+        convo.push({
+          role: "assistant",
+          content: [
+            {
+              type: "output_text",
+              text: reply
+            }
+          ]
+        });
+      } catch (err) {
+        placeholder.remove();
+        addMessage(`エラー: ${err.message}`, "bot");
+      } finally {
+        setBusy(false);
+        input.focus();
       }
     });
 
-    addMessage('system', 'APIキーを入れて、モデル名を確認してから送信してください。');
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
   </script>
 </body>
 </html>
