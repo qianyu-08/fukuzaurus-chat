@@ -233,7 +233,7 @@
     const sendBtn = document.getElementById('sendBtn');
 
     let messages = [];
-    const savedKey = sessionStorage.getItem('openai_api_key');
+    const savedKey = sessionStorage.getItem('openai_api_key'); // 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
     if (savedKey) {
       apiKeyEl.value = savedKey;
       setStatus('キーを読み込みました', 'ok');
